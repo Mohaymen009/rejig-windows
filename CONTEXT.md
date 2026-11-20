@@ -1,11 +1,11 @@
 # Rejig
 
-A Mac app and its MCP companion for arranging the real Home Screen of a connected iPhone, by hand or with an AI client, without writing anything the user has not approved.
+A Windows app (a launcher around the Rejig engine) and its MCP companion for arranging the real Home Screen of a connected iPhone, by hand or with an AI client, without writing anything the user has not approved.
 
 ## Language
 
 **Rejig**:
-The public product: the Mac app plus the MCP companion.
+The public product: the launcher plus the MCP companion.
 
 **MCP companion**:
 The local MCP server that gives AI clients Rejig's device workflows.
@@ -20,7 +20,7 @@ The exact differences between a phone's current Layout and a proposed one, shown
 _Avoid_: diff, preview (when meaning the data)
 
 **Approval**:
-A person's confirmation of one exact Change list for one phone, given through a channel the model cannot answer: the MCP companion's in-chat confirmation or the Mac app's Approve button. An AI client's tool-permission prompt is not an Approval.
+A person's confirmation of one exact Change list for one phone, given through a channel the model cannot answer: the MCP companion's in-chat confirmation or the Approve dialog. An AI client's tool-permission prompt is not an Approval.
 _Avoid_: tool approval, consent, auto-approve
 
 **Apply**:

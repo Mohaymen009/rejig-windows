@@ -9,11 +9,11 @@ it is how a repeated or lost apply_plan call finds the outcome instead of writin
 from __future__ import annotations
 
 import contextlib
-import fcntl
 import hashlib
 import json
 import os
 import plistlib
+import sys
 import re
 import unicodedata
 from collections.abc import Iterable, Iterator, Mapping
@@ -127,8 +127,25 @@ def _locked(root: Path, ident: str) -> Iterator[None]:
     path = root / "locks" / f"{ident}.lock"
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     with open(path, "a") as handle:
-        fcntl.flock(handle, fcntl.LOCK_EX)
-        yield
+        if sys.platform == "win32":
+            import msvcrt
+
+            while True:
+                try:
+                    msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)
+                    break
+                except OSError:
+                    continue
+            try:
+                yield
+            finally:
+                handle.seek(0)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(handle, fcntl.LOCK_EX)
+            yield
 
 
 def write_journal(root: Path, ident: str, record: Mapping[str, Any]) -> dict[str, Any]:

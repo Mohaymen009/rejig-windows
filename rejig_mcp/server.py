@@ -45,7 +45,7 @@ from ios_homescreen.storage import PULLS, find_backup
 
 from . import draft as drafting
 from .draft import DraftError, Drafts
-from .editor import INSTALLED_APP, UNEXPECTED, EditorError, Editor
+from .editor import INSTALLED_APP, SUPPORT, UNEXPECTED, WINDOWS, EditorError, Editor
 from .optimize import optimize
 from .plans import (
     ATTEMPTED,
@@ -533,6 +533,8 @@ def operation(record: dict[str, Any]) -> CallToolResult:
 def approver_command() -> list[str]:
     """The installed app's Approve window, at its fixed path: no setting can swap in another
     program that would answer for the person."""
+    if WINDOWS:
+        return [str(SUPPORT / ".venv/Scripts/pythonw.exe"), str(SUPPORT / "approve.py")]
     return [str(INSTALLED_APP / "Contents/MacOS/Rejig"), "--approve"]
 
 
@@ -725,6 +727,8 @@ async def select_connection(transport: Literal["wifi", "usb", "demo"]) -> Annota
     state = await call(editor.state)
     if (state.get("job") or {}).get("state") == "running":
         raise Failure("app_busy", "Rejig is busy; try again when the current operation ends.")
+    if WINDOWS:
+        raise Failure("unsupported", "On Windows, close Rejig and start it again with Rejig.cmd --usb, --wifi or --demo.")
     old_port = bridge["port"]
     subprocess.run(["/usr/bin/open", f"rejig://connect?transport={transport}"], check=False, capture_output=True)
     await call(

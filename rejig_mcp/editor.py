@@ -21,7 +21,8 @@ from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any
 
-SUPPORT = Path(os.environ.get("REJIG_SUPPORT_DIR") or Path.home() / "Library/Application Support/Rejig")
+WINDOWS = sys.platform == "win32"
+SUPPORT = Path(os.environ.get("REJIG_SUPPORT_DIR") or (Path.home() / "Rejig" if WINDOWS else Path.home() / "Library/Application Support/Rejig"))
 INSTALLED_APP = Path.home() / "Applications/Rejig.app"
 # Which app to open when Rejig is not running; never the approval window (server.approver_command).
 APP = Path(os.environ.get("REJIG_APP") or INSTALLED_APP)
@@ -52,7 +53,13 @@ class Editor:
         try:
             data = json.loads((self.support / "mcp-bridge.json").read_text())
             port, token, pid = int(data["port"]), str(data["token"]), int(data["pid"])
-            os.kill(pid, 0)
+            if WINDOWS:
+                import psutil  # os.kill(pid, 0) would terminate the process on Windows
+
+                if not psutil.pid_exists(pid):
+                    raise OSError("editor not running")
+            else:
+                os.kill(pid, 0)
         except (OSError, ValueError, KeyError, TypeError) as exc:
             raise EditorError("app_not_running", "Rejig is not running.") from exc
         if not 0 < port < 65536 or not token:
@@ -65,6 +72,13 @@ class Editor:
             return self.bridge()
         except EditorError:
             pass
+        if WINDOWS:
+            launcher = self.support / "Rejig.cmd"
+            if not launcher.is_file():
+                raise EditorError("app_not_installed", f"Rejig is not installed at {launcher}; run windows/install.ps1.")
+            subprocess.Popen([str(launcher), "--demo"] if os.environ.get("REJIG_MCP_DEMO") else [str(launcher)],
+                             creationflags=0x00000010)  # CREATE_NEW_CONSOLE
+            return self.wait_for(lambda bridge: True, LAUNCH_WAIT, "app_not_running", "Rejig did not start.")
         if not (self.app / "Contents/MacOS/Rejig").is_file():
             raise EditorError(
                 "app_not_installed", f"Rejig is not installed at {self.app}; run scripts/install.sh."
